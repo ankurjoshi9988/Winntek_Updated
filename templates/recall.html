@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recall</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <style>
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+			background-color: #f1f1f1;
+        }
+		.heading {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			background-color: #fff;
+			padding: 10px 10px;
+			border-radius: 5px;
+			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+			z-index: 1;
+		}
+
+		
+		.heading h2 {
+			flex: 1;
+			text-align: center;
+			margin: 0;
+		}
+
+		.back-button {
+			margin-right: auto; /* Pushes the button to the right */
+			text-decoration: none;
+			color: black;
+			font-weight: bold;
+		}
+		.credits-display {
+            display: flex;
+            justify-content: flex-end;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        input[type="file"], input[type="text"], input[type="submit"], button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+            color: #333;
+            cursor: pointer;
+        }
+
+        input[type="text"] {
+            background-color: #e6f7ff;
+        }
+
+        input[type="submit"].disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            color: #666;
+        }
+
+        input[type="submit"].enabled {
+            background-color: #007bff;
+            cursor: pointer;
+            color: white;
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: block;
+            text-align: left;
+            width: 100%;
+        }
+
+        .toggle-button {
+            margin-top: 10px;
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #333;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            background-color: #404040;
+        }
+
+        nav {
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: #333;
+            padding: 10px 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            font-size: 9px;
+            flex: 1 1 0; /* Ensures equal distribution and alignment */
+        }
+
+        nav a img {
+            display: block; /* Centers image in its flex container */
+            margin: 0 auto;
+            width: 24px;
+            height: 24px;
+        }
+
+        nav a:hover {
+            background-color: rgba(255, 255, 255, 0.1); /* Adjust opacity as needed */
+            transition: background-color 0.3s ease; /* Smooth transition */
+        }
+
+        .loading-indicator {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+		#loading-indicator-ask {
+			display: none; /* Initially hidden */
+			text-align: center;
+			color: #007bff;
+			font-size: 16px;
+			margin-top: 10px;
+		}
+
+		
+
+		
+		#chat-container {
+			flex: 1;  /* Allows the chat container to grow and fill available space */
+			width: 100%;
+			max-width: 600px;
+			padding: 10px;
+			box-sizing: border-box;
+			background: #fff;
+			box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+			margin-top: 0;
+			overflow-y: auto;  /* Enable vertical scrolling */
+			overflow-x: hidden;  /* Prevent horizontal scrolling */
+			background-color: #f9f9f9;
+			display: flex;
+			flex-direction: column;
+			justify-content: flex-start;  /* Start content at the top */
+			max-height: calc(100vh - 220px);  /* Adjust based on the height of the bottom container */
+		}
+		
+		/* Styles for the bottom container */
+		.bottom-container {
+			width: 100%;
+			max-width: 600px;
+			background: #fff;
+			box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+			padding: 15px;
+			box-sizing: border-box;
+			display: flex;  /* Use flexbox */
+			align-items: center;  /* Vertically center items */
+			justify-content: space-between;  /* Distribute space between input and button */
+			position: fixed;
+			bottom: 50px;  /* Adjust as necessary */
+		}
+
+
+        .form-container {
+            width: 100%;
+			display: flex;            
+            flex-direction: column;
+            
+        }
+		
+		#upload_form {
+			display: flex;
+			width: 100%;
+			align-items: center; /* Vertically center items */
+		}
+		
+		#pdf_docs {	    
+			margin-right: 10px;
+			padding: 10px;
+			border: 1px solid #ccc;
+			border-radius: 4px;
+			background-color: #f0f0f0;
+			flex-grow: 1;
+			box-sizing: border-box;
+		}
+
+		#upload_button {
+			flex-shrink: 12;
+			padding: 10px 16px;
+			background-color: #007bff;
+			color: white;
+			border: 1px solid #007bff;
+			border-radius: 4px;
+			cursor: pointer;
+			box-sizing: border-box;
+		}
+
+
+		#ask_form {
+			display: flex;
+			width: 100%;
+			align-items: center; /* Vertically center items */
+		}
+
+		#question {
+			margin-right: 10px;
+			padding: 10px;
+			border: 1px solid #ccc;
+			border-radius: 4px;
+			background-color: #e6f7ff;
+			flex-grow: 1;
+			box-sizing: border-box;
+			resize: none; /* Prevent manual resizing */
+			overflow: hidden; /* Hide overflow when resizing */
+			min-height: 40px; /* Set a minimum height */
+			line-height: 1.5; /* Line height for smoother expansion */
+		}
+
+
+
+		.ask-button {
+			flex-shrink: 10;
+			padding: 10px 16px;
+			background-color: #007bff;
+			color: white;
+			border: 1px solid #007bff;
+			border-radius: 4px;
+			cursor: pointer;
+		}
+
+
+		.ask-button.disabled {
+			background-color: #ccc;
+			cursor: not-allowed;
+			color: #666;
+		}
+
+        .chat-message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .user-message {
+            background-color: #d1e7dd;
+            text-align: right;
+        }
+
+        .system-message {
+            background-color: #f8d7da;
+            text-align: left;
+        }
+		.custom-container1 {
+			max-height: calc(100vh - 80px);
+            overflow-y: auto;
+            padding-top: 60px;
+            overflow-x: hidden;			
+		}
+		.custom-container2 {
+			padding: 20px;
+			background-color: #fff;
+			border-radius: 10px;
+			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+			margin-bottom: 20px;
+			
+			margin: 0 auto; /* Center the form */
+		}
+
+    </style>
+</head>
+<body>
+	<div class="custom-container1">
+		<div class="heading">
+			<a href="/" class="back-button">Back</a>
+			<h2>Recall</h2>
+			<div class="credits-display">
+                Credits: <span id="credits"></span>
+            </div>			
+		</div>
+	</div>
+	
+		<div class="loading-indicator">Uploading...</div>
+		<div id="chat-container">
+			<!-- Loading indicator will appear here while the response is loading -->
+			<div id="loading-indicator-ask" style="display: none;">Loading...</div>
+			<!-- Chat messages will be appended here -->
+		</div>
+		<div class="bottom-container">
+			<div id="upload-section" class="form-container">
+				<form id="upload_form" action="/recall/upload" method="post" enctype="multipart/form-data">
+					<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+					<input type="file" id="pdf_docs" name="pdf_docs" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv">
+					<input id="upload_button" type="submit" value="Upload" disabled>
+				</form>
+			</div>
+			<div id="ask-section" class="form-container" style="display:none;">
+				<form id="ask_form" action="/recall/ask" method="post">
+					<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+					<!-- <input type="text" id="question" name="question" placeholder="Ask your question here..." value=""> -->
+                      <!-- we did add the max lenght here -->
+					 <input type="text" id="question" name="question" placeholder="Ask your question here..." maxlength="100" value="">
+					<input id="ask_button" type="submit" value="Ask" class="ask-button">
+				</form>			
+				<button id="toggleButton" class="toggle-button" type="button" onclick="toggleSections()">Upload Document</button>
+			</div>
+		</div>
+	
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            var askForm = document.getElementById('ask_form');
+            var askButton = document.getElementById('ask_button');
+            var questionInput = document.getElementById('question');
+			// Ensure the loadingIndicator is properly defined
+			var chatContainer = document.getElementById('chat-container'); // Make sure this is accessible globally
+			var loadingIndicator = document.createElement('div');
+			loadingIndicator.id = 'loading-indicator-ask';
+			loadingIndicator.textContent = 'Loading...';
+			loadingIndicator.style.display = 'none';
+			let credits;
+			let hasDeductedCredit = false;  // Declare and initialize the variable
+
+			// Fetch user's credits on page load
+			
+			fetch('/auth/get_credits')
+				.then(response => response.json())
+				.then(data => {
+					credits = data.credits;
+					document.getElementById('credits').textContent = credits;
+					if (credits <= 0) {
+						disableAskButton();
+					}
+				});
+			
+
+			// Function to disable the Ask button
+			function disableAskButton() {
+				const askButton = document.getElementById("ask_button");
+				askButton.disabled = true;
+				askButton.classList.add("disabled");
+			}		
+			// Function to deduct a credit
+			function deductCredit() {
+				if (hasDeductedCredit) return; // Only deduct credit once
+				fetch('/auth/deduct_credit', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						"X-CSRFToken": csrfToken
+					}
+				})
+				.then(response => response.json())
+				.then(data => {
+					credits = data.credits;
+					document.getElementById('credits').textContent = credits;
+					if (credits <= 0) {
+						disableAskButton();
+					}
+					hasDeductedCredit = true; // Set flag to true after deducting
+				})
+				.catch(error => console.error('Error deducting credit:', error));
+			}			
+
+
+            document.getElementById('pdf_docs').addEventListener('change', function() {
+                var files = this.files;
+                var uploadButton = document.getElementById('upload_button');
+                uploadButton.disabled = files.length === 0;
+                toggleButtonState(uploadButton);
+            });
+
+            questionInput.addEventListener('input', function() {
+				// Add the dynamic resizing functionality here
+				this.style.height = 'auto';  // Reset height
+				this.style.height = (this.scrollHeight) + 'px';  // Set it to the scroll heigh
+                var questionValue = this.value.trim();
+                askButton.disabled = questionValue === '';
+                toggleButtonState(askButton);
+                console.log("Question input changed to:", questionValue);
+				
+            });
+
+            function toggleButtonState(button) {
+                if (button.disabled) {
+                    button.classList.add('disabled');
+                    button.classList.remove('enabled');
+                } else {
+                    button.classList.remove('disabled');
+                    button.classList.add('enabled');
+                    button.removeAttribute('disabled');
+                }
+            }
+
+            document.getElementById('upload_form').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                document.title = "Uploading...";
+                document.querySelector('.loading-indicator').style.display = 'flex';
+
+                var formData = new FormData(this);
+
+                $.ajax({
+                    url: this.action,
+                    type: this.method,
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        document.title = "Recall";
+                        document.querySelector('.loading-indicator').style.display = 'none';
+						
+                        document.getElementById('upload-section').style.display = 'none';
+                        document.getElementById('ask-section').style.display = 'flex';
+                        appendMessage('Document uploaded...', 'system-message');
+                    },
+                    error: function(xhr, status, error) {
+                        document.querySelector('.loading-indicator').style.display = 'none';
+                        console.error('Upload error:', error);
+                    }
+                });
+            });
+
+            function appendMessage(message, className) {
+				const chatContainer = document.getElementById('chat-container');
+				const messageElement = document.createElement('div');
+				messageElement.className = `chat-message ${className}`;
+
+				// Remove any instances of "**" from the response
+				let formattedMessage = message.replace(/\*\*/g, '');
+				
+				// Ensure that bullet points have proper line breaks before them
+				formattedMessage = formattedMessage.replace(/Ÿ/g, '<br>• ');
+
+				// Ensure that headers/sections start on a new line with bold formatting
+				formattedMessage = formattedMessage.replace(/(^.*?):\s*/gm, '<br><b>$1:</b><br>');
+
+				// Ensure that bullet points have proper line breaks before them
+				formattedMessage = formattedMessage.replace(/•/g, '<br>•');
+
+				// Ensure that each section and bullet point has at least one line of spacing
+				formattedMessage = formattedMessage.replace(/(\.\s*)([A-Z])/g, '$1<br><br>$2');
+
+				// Insert the formatted response into the content area with proper formatting
+				messageElement.innerHTML = formattedMessage;
+				chatContainer.appendChild(messageElement);
+
+				// Scroll to the bottom of the chat container
+				chatContainer.scrollTop = chatContainer.scrollHeight;
+			}
+			
+
+            askForm.addEventListener('submit', function(event) {
+                console.log('Form submit event triggered');
+                event.preventDefault();
+
+                var question = questionInput.value.trim();
+                console.log('Submitting question:', question);
+				if (credits <= 0) {
+					alert('Insufficient credits to ask a question');
+					return;
+				}
+
+                if (question) {
+				    // Deduct a credit when the first question is asked
+					if (!hasDeductedCredit) {
+						deductCredit();
+					}
+                    // Append user question to the chat
+                    appendMessage(question, 'user-message');
+					// Show the loading indicator right below the user's question
+					chatContainer.appendChild(loadingIndicator);
+					loadingIndicator.style.display = 'block';
+					
+
+                    $.ajax({
+                        url: this.action,
+                        type: this.method,
+                        data: JSON.stringify({ question: question }),
+                        contentType: 'application/json',
+                        headers: {
+                            "X-CSRFToken": csrfToken
+                        },
+                        success: function(response) {
+                            console.log('AJAX success:', response);
+							// Hide and remove the loading indicator
+							loadingIndicator.style.display = 'none';
+							chatContainer.removeChild(loadingIndicator)
+                            appendMessage(response.response, 'system-message');
+							// Clear the input field after submission
+							questionInput.value = '';
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Ask error:', error);
+							// Hide and remove the loading indicator in case of error
+							loadingIndicator.style.display = 'none';
+							chatContainer.removeChild(loadingIndicator);
+                            alert('An error occurred while submitting the question. Please check the console for details.');
+                        }
+                    });
+                } else {
+                    console.log('No question provided');
+                    alert('Please enter a question.');
+                }
+            });
+
+            document.addEventListener('click', function(event) {
+                console.log('Click event on:', event.target);
+            });
+
+            console.log('DOM fully loaded');
+            console.log('Ask form:', askForm);
+            console.log('Ask button:', askButton);
+
+            document.getElementById('toggleButton').addEventListener('click', function() {
+                toggleSections();
+            });
+        });
+
+        function toggleSections() {
+            document.getElementById('upload-section').style.display = 'flex';
+            document.getElementById('ask-section').style.display = 'none';
+        }
+    </script>
+    <nav>
+        <a href="/"><img src="/static/home_icon.png" alt="Home Icon">Home</a>        
+        <a href="/reflect.html"><img src="/static/reflect_icon.png" alt="Reflect Icon">Reflect</a>
+		<a href="/rehearse.html"><img src="/static/rehearse_icon.png" alt="Rehearse Icon">Rehearse</a>
+    </nav>
+</body>
+</html>

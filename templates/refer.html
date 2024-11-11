@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refer</title>
+	<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .flex-container {
+            display: flex;
+            align-items: flex-start; /* Align items to the top */
+        }
+		.text-container {
+			flex-grow: 1; /* Allow the text container to take up the remaining space */
+			margin-left: 10px;
+			font-size: 12px;
+			line-height: 1.2; /* Adjust line height for better alignment */
+			white-space: normal; /* Allow text to wrap */
+			word-wrap: break-word; /* Break long words if necessary */
+			overflow-wrap: break-word; /* Ensure that words are broken properly if they are too long */
+		}
+
+        .picture-wrapper {
+            display: flex;
+            align-items: center;
+        }
+        .persona-picture {
+            width: 50px;
+            height: auto;
+            margin-right: 10px;
+			align-self: flex-start; /* Ensure the image aligns with the top */
+        }
+        .text-wrapper {
+            margin-left: 500px;
+        }
+        .persona-list-wrapper {
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+            padding-top: 80px;
+            overflow-x: hidden;
+        }
+        @media (min-width: 768px) {
+            .persona-list-container {
+                max-height: calc(100vh - 80px);
+                overflow-x: hidden;
+            }
+        }
+        .persona-list-container {
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+            padding-right: 15px;
+            overflow-x: hidden;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f1f1f1;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 10px;
+            background-color: #f1f1f1;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            box-sizing: border-box;
+        }
+        .heading {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+            width: 100%;
+            padding-left: 50px;
+            text-align: left;
+        }
+        .persona-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        .persona-card {
+            width: calc(100% - 10px);
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .persona-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .persona-card h3 {
+            font-size: 15px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .persona-details {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.1;
+            margin-bottom: 10px;
+        }
+        .select-button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .select-button:hover {
+            background-color: #0056b3;
+        }
+        nav {
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: #333;
+            padding: 10px 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            font-size: 9px;
+            flex: 1 1 0;
+        }
+        nav a img {
+            display: block;
+            margin: 0 auto;
+            width: 24px;
+            height: 24px;
+        }
+        nav a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: background-color 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="persona-list-wrapper">
+			<div class="heading">
+				<h2>Refer</h2>
+			</div>
+		</div>
+
+        <div class="persona-list-container" id="personaListContainer">
+            <!-- Persona cards will be dynamically generated here -->
+        </div>
+    </div>
+    <script>
+		$(document).ready(function() {
+			var allPersonas = []; // Global array to store all personas
+
+			// Load personas from the server
+			$.ajax({
+				type: "GET",
+				url: "/load-refer-personas",  // Updated to match the backend route
+				dataType: "json",
+				success: function(response) {
+					console.log("Data loaded successfully:", response);
+					if (response.personas) {
+						allPersonas = response.personas;
+						displayPersonas(allPersonas);
+					} else {
+						console.error("Personas data is not properly formatted or is unavailable.");
+					}
+				},
+				error: function(xhr, status, error) {
+					console.error("Error fetching data:", error);
+				}
+			});
+		});
+
+
+		function displayPersonas(personas) {
+			var container = $("#personaListContainer");
+			container.empty(); // Clear existing personas
+			personas.forEach(function(persona) {
+				container.append(createPersonaCard(persona));
+			});
+		}
+
+
+function createPersonaCard(persona) {
+    var personaCard = $("<div></div>").addClass("persona-card");
+
+    // Ensure persona.name exists and is not empty
+    var personaName = persona.name ? persona.name.toLowerCase().replace(/\s+/g, '_') : '';
+    
+    // Construct the image URL
+    var imageURL = personaName ? "static/" + personaName + ".jpg" : "static/default_image.jpg";
+    
+    // Log the values to the console
+    console.log("Persona Name: ", persona.name);
+    console.log("Processed Persona Name: ", personaName);
+    console.log("Image URL: ", imageURL);
+
+    var pictureWrapper = $("<div></div>").addClass("picture-wrapper").appendTo(personaCard);
+    $("<img>").attr("src", imageURL).on("error", function() {
+        // Log an error if the image fails to load
+        console.log("Image not found, using default image for: ", personaName);
+        $(this).attr("src", "static/default_image.jpg");
+    }).addClass("persona-picture").appendTo(pictureWrapper);
+
+    var textContainer = $("<div></div>").addClass("text-container").appendTo(pictureWrapper);
+    $("<h2></h2>").text(persona.name || 'Unknown').css("color", "#007bff").appendTo(textContainer);
+    $("<p><strong>Occupation:</strong> " + (persona.occupation || 'N/A') + "</p>").appendTo(textContainer);
+    $("<p><strong>Marital Status:</strong> " + (persona.marital_status || 'N/A') + "</p>").appendTo(textContainer);
+    $("<p><strong>Age:</strong> " + (persona.age || 'N/A') + "</p>").appendTo(textContainer);
+    $("<p><strong>Income:</strong> " + (persona.income_range || 'N/A') + "</p>").addClass("persona-details").appendTo(textContainer);
+    $("<p><strong>Dependent Family Members:</strong> " + (persona.dependent_family_members || 'N/A') + "</p>").addClass("persona-details").appendTo(textContainer);
+    $("<p><strong>Financial Goals:</strong> " + (persona.financial_goals || 'N/A') + "</p>").addClass("persona-details").appendTo(textContainer);
+
+    var categoriesText = Array.isArray(persona.category) ? persona.category.join(', ') : (persona.category || '').split(',').join(', ');
+    $("<p><strong>Category:</strong> " + categoriesText + "</p>").appendTo(textContainer);
+
+    var selectButton = $("<button></button>").addClass("select-button").text("Select").click(function() {
+        selectPersona(persona.name || 'Unknown');
+    }).appendTo(textContainer);
+    return personaCard;
+}
+
+
+
+		function selectPersona(personaName) {
+			var chatFilename = personaName.toLowerCase().replace(/\s+/g, '_') + ".json";
+			window.location.href = "SampleChat.html?persona=" + encodeURIComponent(personaName) + "&chatfile=" + encodeURIComponent(chatFilename);
+		}
+    </script>
+    <nav>
+        <a href="/"><img src="/static/home_icon.png" alt="Home Icon">Home</a>
+        <a href="/recall"><img src="static/recall_icon.png" alt="Recall Icon">Recall</a>
+        <a href="/rehearse.html"><img src="/static/rehearse_icon.png" alt="Rehearse Icon">Rehearse</a>
+    </nav>
+</body>
+</html>

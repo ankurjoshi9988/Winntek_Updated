@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insurance Chatbot</title>
+	<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+	body {
+			font-family: Arial, sans-serif;
+			margin: 0;
+			padding: 0;
+			background-color: #f1f1f1;
+			}
+
+	.container {
+		max-width: 100%;
+		max-height: 100%;
+		margin: 0 auto;
+		padding: 5px;
+		background-color: #fff;
+		border-radius: 10px;
+		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+	}
+
+
+	.header {
+		text-align: left;
+		margin-bottom: 10px;
+		font-size: 12px; /* Adjust font size */
+	}
+	.back-button {
+        cursor: pointer;
+        margin-right: 10px;
+    }
+
+	.chat-history {		
+		overflow-y: auto; /* Enable scrolling if content overflows */
+		height: 77vh; /* Set height to half the screen */
+		padding: 10px;
+		border: 1px solid #ccc;
+		border-radius: 5px;
+		background-color: #f9f9f9;
+		margin-bottom: 10px;		
+		padding-bottom: 20px;
+	}
+	
+
+
+	.button-container {
+		display: flex;
+		justify-content: space-between;
+		flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+	}
+
+	.send-button,
+	.clear-chat-button {
+		flex: 0 0 48%; /* Adjust button width for better alignment */
+		margin-bottom: 10px; /* Add margin between buttons */
+		padding: 15px; /* Increased padding for better touchability */
+		background-color: #007bff;
+		color: #fff;
+		border: none;
+		border-radius: 5px;
+		cursor: pointer;
+	}
+
+	.clear-chat-button {
+		background-color: #dc3545;
+	}
+
+	.thumbs {
+		float: right;
+		clear: both;
+		/* Other styles for the thumbs icons */
+	}
+
+	.thumbs button {
+		background: none;
+		border: none;
+		cursor: pointer;
+	}
+
+	.thumbs button img {
+		width: 17px;
+		height: 17px;
+	}
+	.agent-message {
+		text-align: left;
+		font-size: 12px; /* Adjust font size */
+		padding: 3px; /* Adjust padding */
+	}
+
+	.message-wrapper {
+		overflow: auto; /* Ensure the wrapper contains floating elements */
+	}
+
+	.customer-message {
+		float: right;
+		clear: both;		
+		font-size: 12px; /* Adjust font size */
+		padding: 3px; /* Adjust padding */
+	}
+
+	.message-content {
+		display: inline-block;
+		background-color: #f2f2f2;		
+		border-radius: 10px;
+		margin-bottom: 5px; /* Add margin between buttons */
+	}
+	.message-content.agent-message {
+		background-color: #f0f0f0;
+		color: #333;
+		padding: 20px;
+		border-radius: 10px;
+		margin-bottom: 5px; /* Add margin at the bottom */
+		margin-right: 20%; /* Add margin to the right side */
+	}
+
+	.message-content.customer-message {
+		background-color: #f0f0f0;
+		color: #333;
+		padding: 20px;
+		border-radius: 10px;
+		margin-bottom: 5px; /* Add margin at the bottom */
+		margin-left: 20%; /* Add margin to the left side */
+	}
+
+
+	.message-timestamp {
+		font-size: 12px;
+		color: #666;
+	}
+	nav {
+		font-family: 'Roboto', sans-serif;
+		display: flex;
+		justify-content: space-around;
+		align-items: center;
+		background: #333;
+		padding: 10px 0;
+		position: fixed;
+		bottom: 0;
+		width: 100%;
+	}
+
+		nav a {
+			color: white;
+			text-decoration: none;
+			text-align: center;
+			font-size: 9px;
+			flex: 1 1 0; /* Ensures equal distribution and alignment */
+		}
+
+		nav a img {
+			display: block; /* Centers image in its flex container */
+			margin: 0 auto;
+			width: 24px;
+			height: 24px;
+		}
+		nav a:hover {
+			background-color: rgba(255, 255, 255, 0.1); /* Adjust opacity as needed */
+			transition: background-color 0.3s ease; /* Smooth transition */
+		}
+	
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <div class="persona-details" id="persona-details">
+            <div class="header">
+			
+			<h1 id="persona-header"><a href="/refer.html">Back </a> Sample Chat with <span id="persona-name"></span></h1>
+			
+            </div> 
+            <div class="chat-history" id="chat-history">
+				
+				</div>
+			</div>			           
+        </div>		
+    </div>
+
+	<script>
+		console.log("Script is running");  // First line in the script to check if the script runs at all
+
+		$(document).ready(function() {
+			console.log("jQuery ready function triggered.");  // Checks if the jQuery ready function is triggered
+
+			const urlParams = new URLSearchParams(window.location.search);
+			const persona = urlParams.get('persona');
+			const chatFile = urlParams.get('chatfile');
+
+			console.log("Persona:", persona);  // Check what's retrieved as persona
+			console.log("Chat File:", chatFile);  // Check what's retrieved as chatFile
+
+			if (persona) {
+				$('#persona-name').text(persona);
+			} else {
+				console.log("No persona found in URL parameters.");  // Logs if no persona is found
+			}
+
+			if (chatFile) {
+				loadChatContent(chatFile);
+			} else {
+				console.log("No chat file found in URL parameters.");  // Logs if no chat file is found
+			}
+
+		function loadChatContent(chatFile) {
+			console.log("Preparing to load chat content for file:", chatFile); // Log before AJAX call
+
+			$.getJSON(`/get_chat?chatfile=${encodeURIComponent(chatFile)}`, function(data) {
+				//console.log("Chat content loaded successfully:", data); // Log on successful data load
+
+				let formattedHtml = data.map(item => {
+					if (item.type === "heading") {
+						return `<div class="chat-heading">${item.content}</div>`;
+					} else { // Assumes each item represents a message
+						let messageContent = `<p>${escapeHtml(item.hindi)}</p><p>${escapeHtml(item.english)}</p>`;
+						let messageClass = item.speaker === "agent" ? "agent-message" : "customer-message";
+						return `<div class="message-content ${messageClass}">${messageContent}</div>`;
+					}
+				}).join('');
+
+				$("#chat-history").html(formattedHtml);
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				console.error("Failed to load chat content:", textStatus, errorThrown, jqXHR.responseText); // Log detailed error info
+				$("#chat-history").html("<p>Error loading chat. Please try again later.</p>");
+			});
+
+			console.log("AJAX call made."); // Log after making the AJAX call
+		}
+
+		function escapeHtml(text) {
+			var map = {
+				'&': '&amp;',
+				'<': '&lt;',
+				'>': '&gt;',
+				'"': '&quot;',
+				"'": '&#039;'
+			};
+			return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+		}
+		});
+	</script>
+
+
+	<nav>
+		<a href="/"><img src="/static/home_icon.png" alt="Home Icon">Home</a>
+		<a href="/recall"><img src="static/recall_icon.png" alt="Recall Icon">Recall</a>
+        <a href="refer.html"><img src="/static/refer_icon.png" alt="Refer Icon">Refer</a>        <
+    </nav>
+</body>
+</html>
