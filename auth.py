@@ -22,6 +22,8 @@ from dotenv import load_dotenv
 import logging
 import jwt
 from datetime import datetime, timedelta
+from urllib.parse import urlparse, urljoin
+from flask import request, abort
 # from flask import flash, redirect, render_template, request, session, url_for
 # from flask_login import login_user
 # import logging
@@ -181,6 +183,11 @@ def register():
 
 MAX_LOGIN_ATTEMPTS = 3
 LOCKOUT_DURATION = timedelta(hours=24)
+def is_safe_url(target):
+    # Checks if the URL is a safe redirect (relative or within the same domain)
+    host_url = urlparse(request.host_url)
+    target_url = urlparse(urljoin(request.host_url, target))
+    return target_url.scheme in ('http', 'https') and host_url.netloc == target_url.netloc
 
 @auth_bp.route('/auth/login', methods=['GET', 'POST'])
 def login():
@@ -209,7 +216,12 @@ def login():
             session.pop('lockout_until', None)
             logging.info(f"User {user.username} logged in successfully.")
             login_user(user, remember=form.remember.data)
-            return redirect(next_page or url_for('index'))
+
+            # Only redirect to `next_page` if it's safe
+            if next_page and is_safe_url(next_page):
+                return redirect(next_page)
+            else:
+                return redirect(url_for('index'))
         
         # Increment failed login attempts
         failed_attempts = session.get('failed_attempts', 0) + 1
@@ -224,8 +236,6 @@ def login():
             flash('Invalid username or password', 'danger')
     
     return render_template('auth.html', form=form, tab='login')
-
-
 
 
 
