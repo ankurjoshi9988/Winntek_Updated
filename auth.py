@@ -183,59 +183,31 @@ def register():
 
 MAX_LOGIN_ATTEMPTS = 3
 LOCKOUT_DURATION = timedelta(hours=24)
-def is_safe_url(target):
-    # Checks if the URL is a safe redirect (relative or within the same domain)
-    host_url = urlparse(request.host_url)
-    target_url = urlparse(urljoin(request.host_url, target))
-    return target_url.scheme in ('http', 'https') and host_url.netloc == target_url.netloc
+ ALLOWED_REDIRECT_PATHS = {'/rehearse.html', '/reflect.html', '/reflect/load-products', '/index'} 
+  
+def is_whitelisted_path(target): 
+     target_path = urlparse(target).path 
+     return target_path in ALLOWED_REDIRECT_PATHS 
+  
+@auth_bp.route('/auth/login', methods=['GET', 'POST']) 
+ def login(): 
+     form = LoginForm() 
+     next_page = request.args.get('next') 
+  
+    if form.validate_on_submit(): 
+         user = User.query.filter_by(username=form.username.data).first() 
+         if user and user.check_password(form.password.data): 
+             login_user(user, remember=form.remember.data) 
+  
+            if next_page and is_whitelisted_path(next_page): 
+                 return redirect(next_page) 
+             else: 
+                 return redirect(url_for('index')) 
+  
+        flash('Invalid username or password', 'danger') 
+  
+    return render_template('auth.html', form=form, tab='login') 
 
-@auth_bp.route('/auth/login', methods=['GET', 'POST'])
-def login():
-    form = LoginForm()
-    next_page = request.args.get('next')
-    username = form.username.data
-
-    # Check if the user is locked out
-    if 'lockout_until' in session:
-        lockout_until = session['lockout_until']
-        if datetime.now() < lockout_until:
-            flash('Your account is locked due to multiple failed login attempts. Please try again later.', 'danger')
-            return render_template('auth.html', form=form, tab='login')
-        else:
-            # Lockout period has expired, reset attempt count
-            session.pop('lockout_until', None)
-            session.pop('failed_attempts', None)
-
-    if form.validate_on_submit():
-        logging.info("Login form submitted.")
-        user = User.query.filter_by(username=username).first()
-
-        if user and user.check_password(form.password.data):
-            # Reset failed attempts on successful login
-            session.pop('failed_attempts', None)
-            session.pop('lockout_until', None)
-            logging.info(f"User {user.username} logged in successfully.")
-            login_user(user, remember=form.remember.data)
-
-            # Only redirect to `next_page` if it's safe
-            if next_page and is_safe_url(next_page):
-                return redirect(next_page)
-            else:
-                return redirect(url_for('index'))
-        
-        # Increment failed login attempts
-        failed_attempts = session.get('failed_attempts', 0) + 1
-        session['failed_attempts'] = failed_attempts
-        logging.warning(f"Failed login attempt for username: {username}, Invalid username or password")
-        
-        # Check if attempts exceed limit
-        if failed_attempts >= MAX_LOGIN_ATTEMPTS:
-            session['lockout_until'] = datetime.now() + LOCKOUT_DURATION
-            flash('Too many failed attempts. Your account has been locked for 24 hours.', 'danger')
-        else:
-            flash('Invalid username or password', 'danger')
-    
-    return render_template('auth.html', form=form, tab='login')
 
 
 
