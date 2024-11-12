@@ -352,7 +352,7 @@ async def manage_conversation(product_name):
         return jsonify({"error": "Index out of range"}), 500
     except Exception as e:
         current_app.logger.error(f"Error in conversation: {str(e)}")
-        return jsonify({"error"{str(e)}), 500
+        return jsonify(f"Error in conversation: {str(e)}"), 500
 
 
 
